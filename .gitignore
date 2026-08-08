@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Logs / captures
+*.log
+*.pcap
+*.pcapng
+
+# Secrets / credentials
+.env
+.env.*
+*.key
+*.pem
+*.p12
+*.pfx
+
+# Runtime files
+*.pid
+*.tmp
+/tmp/
+
+# Development / backup files
+*.bak
+*.bak-*
+*~
+review/

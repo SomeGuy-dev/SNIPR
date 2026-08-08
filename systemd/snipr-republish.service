@@ -1,0 +1,15 @@
+[Unit]
+Description=SNIPR Persistent RTSP Republisher
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/opt/nucleus/snipr/snipr_republish.sh
+Restart=always
+RestartSec=2
+User=root
+Group=root
+
+[Install]
+WantedBy=multi-user.target
