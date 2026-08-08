@@ -148,6 +148,4 @@ Do not commit Meshtastic channel keys, private keys, credentials, API tokens, op
 
 Example configurations should use placeholder values where deployment-specific information is required.
 
-## License
 
-See [LICENSE](LICENSE).
