@@ -5,8 +5,9 @@
 # Kills the loop cleanly — no orphaned process left running against a
 # stream that no longer exists.
 
-PID_FILE="/tmp/snipr_loop.pid"
-LOG_FILE="/tmp/snipr_loop.log"
+SNIPR_RUN_DIR="${SNIPR_RUN_DIR:-/run/snipr}"   # RAM-backed; created at boot by /etc/tmpfiles.d/snipr.conf
+PID_FILE="$SNIPR_RUN_DIR/snipr_loop.pid"
+LOG_FILE="$SNIPR_RUN_DIR/snipr_loop.log"
 
 if [[ -f "$PID_FILE" ]]; then
     PID=$(cat "$PID_FILE")

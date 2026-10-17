@@ -10,15 +10,21 @@
 set -uo pipefail  # deliberately NOT -e: one bad capture cycle shouldn't kill the whole loop
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PID_FILE="/tmp/snipr_loop.pid"
-LOG_FILE="/tmp/snipr_loop.log"
-RAW_CAPTURE="/tmp/snipr_raw_capture.jpg"
-COMPRESSED_FRAME="/tmp/snipr_compressed_frame.jpg"   # fixed name, overwritten each cycle —
-                                                       # NOT numbered per-cycle, so /tmp doesn't
+SNIPR_RUN_DIR="${SNIPR_RUN_DIR:-/run/snipr}"   # RAM-backed; created at boot by /etc/tmpfiles.d/snipr.conf
+PID_FILE="$SNIPR_RUN_DIR/snipr_loop.pid"
+LOG_FILE="$SNIPR_RUN_DIR/snipr_loop.log"
+RAW_CAPTURE="$SNIPR_RUN_DIR/snipr_raw_capture.jpg"
+COMPRESSED_FRAME="$SNIPR_RUN_DIR/snipr_compressed_frame.jpg"   # fixed name, overwritten each cycle —
+                                                       # NOT numbered per-cycle, so the run folder doesn't
                                                        # fill up over a long autonomous flight
 TARGET_PACKETS=14   # qualified profile: 14 data packets + 1 XOR parity
 SNIPR_UDP_HOST="127.0.0.1"
 SNIPR_UDP_PORT=4246  # matches SNIPR_RAW_UDP_PORT in cot_bridge_SNIPR_patched.py
+
+[[ -d "$SNIPR_RUN_DIR" && -w "$SNIPR_RUN_DIR" ]] || {
+    echo "SNIPR: $SNIPR_RUN_DIR is missing or not writable (run: sudo systemd-tmpfiles --create /etc/tmpfiles.d/snipr.conf)" >&2
+    exit 1
+}
 
 echo $$ > "$PID_FILE"
 echo "$(date -Iseconds) SNIPR loop started (PID $$)" >> "$LOG_FILE"

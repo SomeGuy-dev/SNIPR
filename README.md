@@ -52,27 +52,47 @@ SNIPR does not attempt to transport conventional full-motion video directly over
 
 ```text
 alpha/
-    snipr_compress.py
-    snipr_start_loop.sh
-    snipr_stop_loop.sh
+    snipr_compress.py          frame compressor v2.1 (JPEG, or HEVC/H.264 switched on by a config file)
+    snipr_start_loop_v2.sh     capture loop v2: one open ffmpeg, paced to the radio
+    snipr_start_loop.sh        capture loop v1 (reconnects for every picture)
+    snipr_stop_loop.sh         stops either loop
 
 bravo/
-    snipr_republish.sh
+    snipr_decode.py            turns a reassembled HEVC/H.264/JPEG frame into a JPEG
+    snipr_republish.sh         republisher v3.2: steady 5 pictures/s RTSP stream with an age overlay
 
 common/
     snipr_protocol.py
 
 systemd/
     snipr-republish.service
+
+tools/
+    bridge_hop_limit.py        per-deployment hop limit for the bridge's own packets (see docs/RELAYS.md)
+    enable_snipr_cfg.py        adds or removes the snipr: block in /etc/nucleus/config.yaml
+    move_snipr_runtime.py      moves SNIPR's working files from /tmp to /run/snipr
+    loss_collect.sh            read-only log collection on a node, for loss analysis
+    loss_analyze.py            pairs Alpha's sent packets with Bravo's receipts
+    bravo_cpu.sh               read-only load and temperature check on Bravo
+
+docs/
+    MEASUREMENTS.md            what was measured and calculated, and how reliable each number is
+    RELAYS.md                  hop limit, relays and the packet-loss lead
 ```
 
 ### Alpha
 
 The Alpha side receives the source video and produces compressed image frames for transmission.
 
-- `snipr_compress.py` implements the image-processing pipeline.
-- `snipr_start_loop.sh` starts the capture/compression workflow.
+- `snipr_compress.py` implements the image-processing pipeline. It writes the same 160x120 JPEG as
+  before until a one-line switch file (`/etc/nucleus/snipr_codec.conf`, for example
+  `codec=hevc size=256x192 packets=7`) selects HEVC or H.264.
+- `snipr_start_loop_v2.sh` is the current capture loop. It keeps one ffmpeg connected to the drone
+  stream and times each cycle so a new picture reaches the bridge just before the previous one has
+  finished sending. `snipr_start_loop.sh` is the original loop.
 - `snipr_stop_loop.sh` stops the Alpha processing loop.
+- Both loops keep their working files in `/run/snipr`, a RAM-backed folder (create it with
+  `tools/move_snipr_runtime.py --tmpfiles`).
 
 ### Common
 
@@ -82,7 +102,10 @@ The Alpha side receives the source video and produces compressed image frames fo
 
 The Bravo side receives completed imagery and republishes it for consumption by the video distribution system.
 
-`snipr_republish.sh` provides the current republishing workflow.
+- `snipr_decode.py` decodes a reassembled HEVC/H.264 frame (or passes a JPEG through) onto a fixed
+  640x480 canvas, so the stream ATAK sees never changes size.
+- `snipr_republish.sh` (v3.2) serves the newest picture as RTSP at a steady 5 pictures per second,
+  decodes in the background so the stream never stalls, and overlays the picture's age.
 
 ### systemd
 
@@ -124,6 +147,11 @@ Development testing has demonstrated:
 - received-image republishing;
 - RTSP/ATAK integration;
 - VLoRa Codec2 voice operation on the same development platform.
+
+The repository now also holds the HEVC compressor and decoder, the v2 capture loop, the v3.2
+republisher and the diagnostic tools. The numbers behind them, and how far each can be trusted, are in
+[docs/MEASUREMENTS.md](docs/MEASUREMENTS.md). The main open item is packet loss (11-15% overall): a
+likely cause is described in [docs/RELAYS.md](docs/RELAYS.md) but is not yet confirmed.
 
 Additional installation documentation, sanitized configuration examples, protocol documentation, and coexistence testing are planned.
 
